@@ -1,5 +1,6 @@
 import sys
 import os
+import pymongo
 from mmdet.apis import init_detector, inference_detector, show_result
 
 if len(sys.argv) != 3 or sys.argv[1] != '-folder':
@@ -23,6 +24,9 @@ for subFolder in folder_list:
   for img_name in tmpFileList:
     absolute_img_path = absoluteSubFolder + img_name
     result = inference_detector(model, absolute_img_path)
-    show_result(absolute_img_path, result, model.CLASSES, out_file="result.jpg")
+    print('--------------------------------------')
+    endResult = show_result(absolute_img_path, result, model.CLASSES, out_file="result.jpg")
+    print(endResult)
+    print('--------------------------------------')    
     os.remove("result.jpg")
 
