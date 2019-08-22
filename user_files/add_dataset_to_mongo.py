@@ -2,9 +2,9 @@ import sys
 import os
 import functools
 import csv
+from timeit import default_timer as timer
 from pymongo import MongoClient
 from mmdet.apis import init_detector, inference_detector, show_result
-
 
 
 def file_cmp(a, b):
@@ -75,7 +75,9 @@ checkpoint_file = '../checkpoints/htc_dconv_c3-c5_mstrain_400_1400_x101_64x4d_fp
 
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
-
+start = timer()
+processed_frames = 0
+total_frames = 0
 folder_path = sys.argv[2] + 'keyframes/'
 tsv_path = sys.argv[2] + 'tsv/'
 folder_list = os.listdir(folder_path)
@@ -84,6 +86,13 @@ if startFolder == -1:
   startFolder = 0
   endFolder = len(folder_list)
 print("Start folder: %d and end folder: %d" % (startFolder, endFolder))
+
+# Count total number of frames
+for i in range(startFolder-1, endFolder):
+  absoluteSubFolder = folder_path + folder_list[i] + '/'
+  tmpFileList = os.listdir(absoluteSubFolder)
+  total_frames += len(tmpFileList)
+
 for i in range(startFolder-1, endFolder):
   video_number = i + 1
   absoluteSubFolder = folder_path + folder_list[i] + '/'
@@ -117,6 +126,14 @@ for i in range(startFolder-1, endFolder):
       "object": endResult},
       upsert=True
     )
+    end = timer() - start
+    processed_frames += 1
+    average_time_per_frame = end / processed_frames
+    estimated_time_left = average_time_per_frame * (total_frames - processed_frames)
+    print("%d / %d frames done (%f%%)" % (processed_frames, total_frames, 100.0 * processed_frames / total_frames))
+    print("Average time for processing in seconds: %f" % average_time_per_frame)
+    print("Elapsed time in seconds: %f, in minutes: %f, in hours: %f" % (end, end / 60, end / 3600))
+    print("Estimated remaining time in seconds: %f, in minutes: %f, in hours: %f" % (estimated_time_left, estimated_time_left / 60, estimated_time_left / 3600))
     print('--------------------------------------')    
     os.remove("result.jpg")
 
