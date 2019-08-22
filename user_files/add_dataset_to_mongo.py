@@ -25,14 +25,12 @@ def isInt(s):
 
 
 def get_tsv_data(tsv_folder_path, video_number):
-  print("Called get_tsv_data")
   tsv_file_path = str(video_number)
   while len(tsv_file_path) < 5:
     tsv_file_path = '0' + tsv_file_path
   tsv_file_path = tsv_folder_path + tsv_file_path + '.tsv'
   data = []
   with open(tsv_file_path) as tsv_file:
-    print("Opened file: %s" % tsv_file_path)
     tsv_reader = csv.reader(tsv_file, delimiter="\t")
     i = 0
     for line in tsv_reader:
@@ -101,8 +99,24 @@ for i in range(startFolder-1, endFolder):
     endResult = show_result(absolute_img_path, result, model.CLASSES, out_file="result.jpg")
     print(endResult)
     print(tsv_data[frame_number - 1])
-    print("Frame number: %d" % frame_number)
+    # Remove position
+    for objects in endResult:
+      objects.pop('leftTop')
+      objects.pop('rightBottom')
+
     # Add to database
+    current_frame_tsv = tsv_data[frame_number-1]
+    col.update(
+      {"video": video_number, 
+      "startFrame": current_frame_tsv["startFrame"]},
+      {"video": video_number, 
+      "startFrame": current_frame_tsv["startFrame"],
+      "endFrame": current_frame_tsv["endFrame"],
+      "startSecond": current_frame_tsv["startSecond"],
+      "endSecond": current_frame_tsv["endSecond"],
+      "object": endResult},
+      upsert=True
+    )
     print('--------------------------------------')    
     os.remove("result.jpg")
 
