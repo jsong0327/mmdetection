@@ -1,7 +1,8 @@
 import sys
 import os
 import functools
-import pymongo
+import csv
+from pymongo import MongoClient
 from mmdet.apis import init_detector, inference_detector, show_result
 
 
@@ -22,6 +23,33 @@ def isInt(s):
     except ValueError:
       return False
 
+
+def get_tsv_data(tsv_folder_path, video_number):
+  print("Called get_tsv_data")
+  tsv_file_path = str(video_number)
+  while len(tsv_file_path) < 5:
+    tsv_file_path = '0' + tsv_file_path
+  tsv_file_path = tsv_folder_path + tsv_file_path + '.tsv'
+  data = []
+  with open(tsv_file_path) as tsv_file:
+    print("Opened file: %s" % tsv_file_path)
+    tsv_reader = csv.reader(tsv_file, delimiter="\t")
+    i = 0
+    for line in tsv_reader:
+      if i == 0:
+        pass
+      else:
+        myLine = {"startFrame": int(line[0]), "endFrame": int(line[2]), "startSecond": float(line[1]), "endSecond": float(line[3])}
+        data.append(myLine)
+      i += 1
+  return data
+
+
+
+client = MongoClient('127.0.0.1', 27017)
+db = client.testdb
+col = db.mmdetection
+col.remove({})
 
 if (len(sys.argv) != 3 \
     and (len(sys.argv) != 5 or (len(sys.argv) == 5 and sys.argv[3] != '-range'))) \
@@ -50,7 +78,8 @@ checkpoint_file = '../checkpoints/htc_dconv_c3-c5_mstrain_400_1400_x101_64x4d_fp
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
-folder_path = sys.argv[2]
+folder_path = sys.argv[2] + 'keyframes/'
+tsv_path = sys.argv[2] + 'tsv/'
 folder_list = os.listdir(folder_path)
 folder_list.sort()
 if startFolder == -1:
@@ -58,16 +87,22 @@ if startFolder == -1:
   endFolder = len(folder_list)
 print("Start folder: %d and end folder: %d" % (startFolder, endFolder))
 for i in range(startFolder-1, endFolder):
+  video_number = i + 1
   absoluteSubFolder = folder_path + folder_list[i] + '/'
   tmpFileList = os.listdir(absoluteSubFolder)
   tmpFileList = sorted(tmpFileList, key=functools.cmp_to_key(file_cmp))
+  tsv_data = get_tsv_data(tsv_path, video_number)
   for img_name in tmpFileList:
     print(img_name)
     absolute_img_path = absoluteSubFolder + img_name
     result = inference_detector(model, absolute_img_path)
+    frame_number = int(img_name.split('_')[1])
     print('--------------------------------------')
     endResult = show_result(absolute_img_path, result, model.CLASSES, out_file="result.jpg")
     print(endResult)
+    print(tsv_data[frame_number - 1])
+    print("Frame number: %d" % frame_number)
+    # Add to database
     print('--------------------------------------')    
     os.remove("result.jpg")
 
