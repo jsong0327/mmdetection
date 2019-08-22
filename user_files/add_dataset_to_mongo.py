@@ -47,7 +47,6 @@ def get_tsv_data(tsv_folder_path, video_number):
 client = MongoClient('127.0.0.1', 27017)
 db = client.testdb
 col = db.mmdetection
-col.remove({})
 
 if (len(sys.argv) != 3 \
     and (len(sys.argv) != 5 or (len(sys.argv) == 5 and sys.argv[3] != '-range'))) \
