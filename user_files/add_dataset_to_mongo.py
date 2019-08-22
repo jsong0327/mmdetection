@@ -115,17 +115,18 @@ for i in range(startFolder-1, endFolder):
 
     # Add to database
     current_frame_tsv = tsv_data[frame_number-1]
-    col.update(
-      {"video": video_number, 
-      "startFrame": current_frame_tsv["startFrame"]},
-      {"video": video_number, 
-      "startFrame": current_frame_tsv["startFrame"],
-      "endFrame": current_frame_tsv["endFrame"],
-      "startSecond": current_frame_tsv["startSecond"],
-      "endSecond": current_frame_tsv["endSecond"],
-      "object": endResult},
-      upsert=True
-    )
+    if len(endResult) > 0:
+      col.update(
+        {"video": video_number, 
+        "startFrame": current_frame_tsv["startFrame"]},
+        {"video": video_number, 
+        "startFrame": current_frame_tsv["startFrame"],
+        "endFrame": current_frame_tsv["endFrame"],
+        "startSecond": current_frame_tsv["startSecond"],
+        "endSecond": current_frame_tsv["endSecond"],
+        "object": endResult},
+        upsert=True
+      )
     end = timer() - start
     processed_frames += 1
     average_time_per_frame = end / processed_frames
